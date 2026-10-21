@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Data Bank</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffe14d;--card:#ffffff;--field:#ffffff;--ink:#111111;--muted:#4a4a4a;
+  --pink:#ff6fb5;--blue:#6fa8ff;--green:#3ddc84;--err:#d6202b;--ok:#0a7a3d;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+:root[data-theme="dark"]{
+  --bg:#17141f;--card:#241f2e;--field:#17141f;--ink:#f6f1e7;--muted:#b9b2c9;
+  --pink:#ff7ab8;--blue:#6fa2ff;--green:#4ee59a;--err:#ff7b86;--ok:#6dffa8}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;font-weight:500;line-height:1.5}
+main{max-width:900px;margin:0 auto;padding:28px 18px 56px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:28px}
+h1{display:inline-block;margin:0;padding:4px 16px;font-size:1.9rem;font-weight:800;letter-spacing:-.03em;line-height:1.2;color:#111;background:var(--pink);border:3px solid var(--ink);border-radius:14px;box-shadow:4px 4px 0 var(--ink);transform:rotate(-2deg)}
+h2{font-size:1.2rem;margin:0 0 14px;font-weight:800;letter-spacing:-.01em}
+.status{display:inline-flex;align-items:center;gap:8px;margin:14px 0 0 6px;padding:3px 12px;border:2px solid var(--ink);border-radius:999px;background:var(--card);font-size:.82rem;font-weight:700;color:var(--err)}
+.status::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--err)}
+.theme{background:var(--card);color:var(--ink);border:3px solid var(--ink);border-radius:12px;padding:7px 14px;font:inherit;font-weight:700;font-size:.88rem;box-shadow:3px 3px 0 var(--ink);cursor:pointer;transition:transform .1s,box-shadow .1s}
+.theme:active,.go:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.grid{display:grid;grid-template-columns:230px 1fr;gap:24px;align-items:stretch}
+@media (max-width:680px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--card);border:3px solid var(--ink);border-radius:22px;padding:22px;box-shadow:6px 6px 0 var(--ink)}
+.vault{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.tank{position:relative;width:110px;height:220px;border:3px solid var(--ink);border-radius:18px 18px 34px 34px;overflow:hidden;background:var(--field)}
+.fill{position:absolute;left:0;right:0;bottom:0;height:0;background:var(--pink);border-top:3px solid var(--ink);transition:height .6s cubic-bezier(.3,1.4,.5,1)}
+.fill[style*="height: 0%"]{border-top:0}
+.ticks{position:absolute;inset:0;background:repeating-linear-gradient(to top,transparent 0 33px,color-mix(in srgb,var(--ink) 35%,transparent) 33px 35px);pointer-events:none}
+.bal{font-size:2.5rem;font-weight:800;line-height:1;text-align:center;letter-spacing:-.04em}
+.sub{color:var(--muted);font-size:.9rem;text-align:center}
+.tabs{display:flex;gap:10px;margin-bottom:18px}
+.tab{flex:1;padding:10px;border:3px solid var(--ink);border-radius:12px;background:var(--card);color:var(--ink);font:inherit;font-weight:800;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--green);color:#111;box-shadow:3px 3px 0 var(--ink)}
+.row{display:flex;gap:10px;margin-bottom:12px}
+input,select{font:inherit;font-weight:600;color:var(--ink);background:var(--field);border:3px solid var(--ink);border-radius:12px;padding:11px 14px;min-width:0}
+input{flex:1;font-size:1.1rem}
+input::placeholder{color:var(--muted);font-weight:500}
+.go{width:100%;padding:14px;border:3px solid var(--ink);border-radius:12px;background:var(--pink);color:#111;font:inherit;font-weight:800;font-size:1.05rem;box-shadow:4px 4px 0 var(--ink);cursor:pointer;transition:transform .1s,box-shadow .1s}
+.quick{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{border:2px solid var(--ink);background:var(--card);color:var(--ink);border-radius:999px;padding:4px 14px;font:inherit;font-weight:700;font-size:.85rem;cursor:pointer}
+.chip:hover{background:var(--blue);color:#111}
+.msg{min-height:1.4em;margin:12px 0 0;font-size:.95rem;font-weight:700}
+.msg.err{color:var(--err)}.msg.ok{color:var(--ok)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:2px dashed color-mix(in srgb,var(--ink) 40%,transparent)}
+li:first-child{border-top:0}
+li>div:first-of-type{flex:1;font-weight:700}
+.t-in::before,.t-out::before{display:grid;place-items:center;width:30px;height:30px;flex:none;border:2px solid var(--ink);border-radius:50%;color:#111;font-weight:800}
+.t-in::before{content:"+";background:var(--green)}.t-out::before{content:"\2212";background:var(--pink)}
+.amt{font-weight:800}.amt.in{color:var(--ok)}.amt.out{color:var(--ink)}
+.when{color:var(--muted);font-size:.82rem;font-weight:500}
+.empty{color:var(--muted);padding:6px 0}
+.hist{margin-top:26px}
+.reset{background:none;border:0;color:var(--muted);text-decoration:underline;font:inherit;font-weight:600;font-size:.88rem;cursor:pointer;margin-top:14px;padding:0}
+@media (prefers-reduced-motion:reduce){.fill,.theme,.go{transition:none}}
+</style>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kush">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>Data Bank</h1><span class="status">Server offline</span></div>
+    <button class="theme" id="theme" type="button">Dark / Light</button>
+  </header>
+
+  <div class="grid">
+    <section class="panel vault" aria-label="Stored data">
+      <div class="tank" role="img" aria-label="Bank fill level">
+        <div class="fill" id="fill"></div><div class="ticks"></div>
+      </div>
+      <div class="bal" id="bal">0 MB</div>
+      <div class="sub" id="cap">Limit: 100 GB</div>
+    </section>
+
+    <section class="panel">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tDep" aria-selected="true" type="button">Add</button>
+        <button class="tab" role="tab" id="tWit" aria-selected="false" type="button">Withdraw</button>
+      </div>
+      <h2 id="title">Add your leftover data</h2>
+      <div class="quick" id="quick"></div>
+      <div class="row">
+        <input id="amt" type="number" inputmode="decimal" min="0" step="any" placeholder="How much data?" aria-label="Data amount">
+        <select id="unit" aria-label="Unit"><option value="1">MB</option><option value="1024">GB</option></select>
+      </div>
+      <button class="go" id="go" type="button">Add</button>
+      <p class="msg" id="msg" role="status"></p>
+    </section>
+  </div>
+
+  <section class="panel hist">
+    <h2>Transaction history</h2>
+    <ul id="list"></ul>
+    <button class="reset" id="reset" type="button">Clear everything</button>
+  </section>
+</main>
+
+<script>
+(function(){
+  var KEY="databank.v1", CAP=100*1024, mode="dep";
+  var state={balance:0,history:[]};
+  try{var raw=localStorage.getItem(KEY);if(raw){var p=JSON.parse(raw);if(p&&typeof p.balance==="number"&&Array.isArray(p.history))state=p}}catch(e){}
+
+  var $=function(id){return document.getElementById(id)};
+  var amt=$("amt"),unit=$("unit"),msg=$("msg");
+
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+  function fmt(mb){
+    if(mb>=1024)return (mb/1024).toFixed(2).replace(/\.?0+$/,"")+" GB";
+    return (+mb.toFixed(1))+" MB";
+  }
+  function say(t,type){msg.textContent=t;msg.className="msg "+(type||"")}
+
+  function render(){
+    $("bal").textContent=fmt(state.balance);
+    $("fill").style.height=Math.min(100,state.balance/CAP*100)+"%";
+    $("cap").textContent=fmt(CAP-state.balance)+" space left (limit "+fmt(CAP)+")";
+    var ul=$("list");ul.innerHTML="";
+    if(!state.history.length){var e=document.createElement("li");e.className="empty";e.textContent="No transactions yet. Add your first data above.";ul.appendChild(e)}
+    state.history.slice().reverse().slice(0,30).forEach(function(h){
+      var li=document.createElement("li"),l=document.createElement("div"),r=document.createElement("div");
+      l.innerHTML="";
+      var a=document.createElement("div");a.textContent=h.type==="in"?"Added":"Withdrawn";
+      var w=document.createElement("div");w.className="when";w.textContent=new Date(h.t).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"});
+      l.appendChild(a);l.appendChild(w);
+      r.className="amt "+h.type;r.textContent=(h.type==="in"?"+ ":"− ")+fmt(h.mb);
+      li.className="t-"+h.type;li.appendChild(l);li.appendChild(r);ul.appendChild(li);
+    });
+    var q=$("quick");q.innerHTML="";
+    var opts=mode==="dep"?[[100,"100 MB"],[500,"500 MB"],[1024,"1 GB"]]:[[100,"100 MB"],[500,"500 MB"],[state.balance,"Withdraw all"]];
+    opts.forEach(function(o){
+      var b=document.createElement("button");b.type="button";b.className="chip";b.textContent=o[1];
+      b.onclick=function(){
+        if(o[1]==="Withdraw all"){amt.value=+(state.balance/(+unit.value)).toFixed(3)}
+        else{amt.value=o[0]>=1024&&unit.value==="1024"?o[0]/1024:(unit.value==="1024"?o[0]/1024:o[0])}
+        amt.focus();
+      };
+      q.appendChild(b);
+    });
+  }
+
+  function setMode(m){
+    mode=m;
+    $("tDep").setAttribute("aria-selected",m==="dep");
+    $("tWit").setAttribute("aria-selected",m==="wit");
+    $("title").textContent=m==="dep"?"Add your leftover data":"Withdraw your data";
+    $("go").textContent=m==="dep"?"Add":"Withdraw";
+    say("");amt.value="";render();
+  }
+
+  function submit(){
+    if(mode==="dep"){say("Server is offline. Data cannot be added right now, please try again later.","err");return}
+    var v=parseFloat(amt.value);
+    if(!isFinite(v)||v<=0){say("Enter a valid amount, like 500 MB or 1.5 GB.","err");return}
+    var mb=v*(+unit.value);
+    if(mode==="dep"){
+      if(state.balance+mb>CAP){say("Not enough space. You can only add "+fmt(CAP-state.balance)+" more.","err");return}
+      state.balance+=mb;state.history.push({type:"in",mb:mb,t:Date.now()});
+      say(fmt(mb)+" added.","ok");
+    }else{
+      if(mb>state.balance+0.0001){say("The bank only has "+fmt(state.balance)+". You cannot withdraw more than that.","err");return}
+      mb=Math.min(mb,state.balance);
+      state.balance-=mb;state.history.push({type:"out",mb:mb,t:Date.now()});
+      say(fmt(mb)+" withdrawn.","ok");
+    }
+    state.balance=Math.max(0,+state.balance.toFixed(3));
+    save();amt.value="";render();
+  }
+
+  $("tDep").onclick=function(){setMode("dep")};
+  $("tWit").onclick=function(){setMode("wit")};
+  $("go").onclick=submit;
+  amt.addEventListener("keydown",function(e){if(e.key==="Enter")submit()});
+  unit.addEventListener("change",function(){amt.value=""});
+  $("reset").onclick=function(){
+    if(confirm("Your balance and entire history will be permanently deleted. Are you sure?")){state={balance:0,history:[]};save();say("Everything has been cleared.","ok");render()}
+  };
+  $("theme").onclick=function(){
+    var r=document.documentElement,dark=r.getAttribute("data-theme")==="dark";
+    r.setAttribute("data-theme",dark?"light":"dark");
+  };
+  render();
+})();
+</script>
+<a href="index.html" aria-label="Home" style="position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:9999;padding:9px 14px;border-radius:999px;background:#111;color:#fff;font:600 14px system-ui,sans-serif;text-decoration:none;opacity:.88;box-shadow:0 4px 14px rgba(0,0,0,.3)">&#8592; Home</a>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+</body>
+</html>

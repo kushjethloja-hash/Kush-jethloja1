@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zip Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--bg:#ece9ff;--card:#ffffff;--ink:#101a3a;--muted:#5d6590;--line:#d9d4f7;--tint:#f4f2ff;--blue:#2f4bff;--blue-ink:#ffffff;--sun:#ffd23f;--red:#d7263d;--ok:#0a8f5b}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1230;--card:#171f4a;--ink:#f1f0ff;--muted:#a3a9d8;--line:#2c3668;--tint:#1d2656;--blue:#8a98ff;--blue-ink:#0d1230;--red:#ff7b8c;--ok:#4fd8a0}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Outfit","Segoe UI",system-ui,sans-serif;line-height:1.5}
+main{max-width:980px;margin:0 auto;padding:36px 18px 56px}
+h1{margin:0;font-size:clamp(2.4rem,7vw,3.8rem);font-weight:800;letter-spacing:-.03em;line-height:1}
+.lead{color:var(--muted);margin:10px 0 0;max-width:46ch;font-size:1.05rem}
+.zipper{position:relative;height:20px;margin:26px 0 30px;background:
+ repeating-linear-gradient(90deg,var(--ink) 0 8px,transparent 8px 16px) top/100% 9px no-repeat,
+ repeating-linear-gradient(90deg,transparent 0 8px,var(--ink) 8px 16px) bottom/100% 9px no-repeat}
+.pull{position:absolute;top:-8px;left:0;width:52px;height:36px;background:var(--sun);border:2.5px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink);animation:slide 1.2s cubic-bezier(.65,0,.25,1) both}
+.pull::after{content:"";position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px;border:2.5px solid var(--ink);border-radius:50%}
+@keyframes slide{from{left:0}to{left:calc(100% - 52px)}}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+@media (max-width:760px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:2.5px solid var(--ink);border-radius:24px;padding:22px;box-shadow:7px 7px 0 var(--ink)}
+.tag{display:inline-block;background:var(--blue);color:var(--blue-ink);font-weight:700;font-size:.85rem;padding:3px 12px;border-radius:999px;margin-bottom:8px}
+.tag.sun{background:var(--sun);color:#101a3a}
+h2{margin:0 0 14px;font-size:1.45rem;font-weight:700;letter-spacing:-.01em}
+.drop{border:2.5px dashed var(--blue);border-radius:18px;padding:26px 14px;text-align:center;color:var(--muted);background:var(--tint);transition:transform .15s,background .15s}
+.drop.over{background:var(--sun);color:#101a3a;transform:scale(1.015)}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;justify-content:center}
+button,label.btn{font:inherit;font-weight:600;border:2px solid var(--ink);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 18px;cursor:pointer;transition:transform .1s,box-shadow .1s;box-shadow:2px 2px 0 var(--ink)}
+button:hover:not(:disabled),label.btn:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)}
+button:active:not(:disabled){transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
+button.main{background:var(--sun);color:#101a3a;width:100%;padding:14px;margin-top:16px;font-size:1.05rem;font-weight:800;box-shadow:4px 4px 0 var(--ink)}
+button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+input[type=file]{display:none}
+input[type=text],select{font:inherit;padding:10px 14px;border:2px solid var(--ink);border-radius:14px;min-width:0;background:var(--card);color:var(--ink)}
+.opts{display:flex;gap:10px;margin-top:16px}.opts input{flex:1}
+ul{list-style:none;margin:14px 0 0;padding:0;max-height:250px;overflow:auto}
+li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;margin-bottom:6px;background:var(--tint);border-radius:12px;font-size:.93rem}
+li span.n{overflow-wrap:anywhere;font-weight:500}
+li small{color:var(--muted);white-space:nowrap;margin-right:6px}
+li button{padding:3px 12px;font-size:.85rem}
+.x{color:var(--red);padding:0 9px!important;font-size:1.1rem!important;line-height:1.4}
+progress{width:100%;height:12px;margin-top:16px;display:none;accent-color:var(--blue)}
+.msg{min-height:1.5em;margin:12px 0 0;font-weight:500}.err{color:var(--red)}.ok{color:var(--ok)}
+button:focus-visible,input:focus-visible,select:focus-visible,label.btn:focus-within{outline:3px solid var(--blue);outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.pull{animation:none;left:calc(100% - 52px)}.drop,button{transition:none}}
+</style>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kush">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Zip Tool</h1>
+    <p class="lead">Files ko zip me badlo, ya zip me se wapas nikalo. Sab kuch aapke browser me hota hai, koi file upload nahi hoti.</p>
+    <div class="zipper" aria-hidden="true"><i class="pull"></i></div>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <span class="tag">Pack</span>
+      <h2>Zip banao</h2>
+      <div class="drop" id="drop1">Files ya folder yahan drop karo
+        <div class="btns">
+          <label class="btn">Files chuno<input type="file" id="pick" multiple></label>
+          <label class="btn">Folder chuno<input type="file" id="pickDir" webkitdirectory></label>
+        </div>
+      </div>
+      <ul id="list1"></ul>
+      <div class="opts">
+        <input type="text" id="zname" value="mera-data" aria-label="Zip ka naam">
+        <select id="level" aria-label="Compression">
+          <option value="0">Bina compress</option>
+          <option value="6" selected>Normal</option>
+          <option value="9">Sabse chhota</option>
+        </select>
+      </div>
+      <progress id="prog" max="100" value="0"></progress>
+      <button class="main" id="make" disabled>Zip banao aur download karo</button>
+      <p class="msg" id="msg1" role="status"></p>
+    </section>
+
+    <section class="card">
+      <span class="tag sun">Unpack</span>
+      <h2>Zip kholo</h2>
+      <div class="drop" id="drop2">Zip file yahan drop karo
+        <div class="btns"><label class="btn">Zip chuno<input type="file" id="pickZip" accept=".zip,application/zip"></label></div>
+      </div>
+      <ul id="list2"></ul>
+      <button class="main" id="all" disabled>Sab files download karo</button>
+      <p class="msg" id="msg2" role="status"></p>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var files=[], entries=[];
+
+  function size(n){return n>=1048576?(n/1048576).toFixed(1)+" MB":n>=1024?(n/1024).toFixed(1)+" KB":n+" B"}
+  function say(id,t,c){var e=$(id);e.textContent=t;e.className="msg "+(c||"")}
+  function save(blob,name){
+    var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(a.href)},5000);
+  }
+  function needLib(m){if(typeof JSZip==="undefined"){say(m,"JSZip load nahi hua. Internet chalu karke page dobara kholo.","err");return true}return false}
+  function wire(drop,cb){
+    ["dragenter","dragover"].forEach(function(t){drop.addEventListener(t,function(e){e.preventDefault();drop.classList.add("over")})});
+    ["dragleave","drop"].forEach(function(t){drop.addEventListener(t,function(e){e.preventDefault();drop.classList.remove("over")})});
+    drop.addEventListener("drop",function(e){cb(Array.prototype.slice.call(e.dataTransfer.files))});
+  }
+
+  /* ---------- Zip banao ---------- */
+  function path(f){return f.webkitRelativePath||f.name}
+  function add(list){
+    list.forEach(function(f){files.push(f)});
+    renderFiles();say("msg1","");
+  }
+  function renderFiles(){
+    var ul=$("list1");ul.innerHTML="";
+    files.forEach(function(f,i){
+      var li=document.createElement("li"),n=document.createElement("span"),s=document.createElement("small"),x=document.createElement("button");
+      n.className="n";n.textContent=path(f);s.textContent=size(f.size);
+      x.className="x";x.textContent="×";x.setAttribute("aria-label",path(f)+" hatao");
+      x.onclick=function(){files.splice(i,1);renderFiles()};
+      var r=document.createElement("span");r.appendChild(s);r.appendChild(x);
+      li.appendChild(n);li.appendChild(r);ul.appendChild(li);
+    });
+    $("make").disabled=!files.length;
+  }
+  $("pick").onchange=function(e){add(Array.prototype.slice.call(e.target.files));e.target.value=""};
+  $("pickDir").onchange=function(e){add(Array.prototype.slice.call(e.target.files));e.target.value=""};
+  wire($("drop1"),add);
+
+  $("make").onclick=function(){
+    if(needLib("msg1"))return;
+    var zip=new JSZip(),seen={};
+    files.forEach(function(f){
+      var p=path(f);
+      if(seen[p]){var d=p.lastIndexOf(".");p=d>0?p.slice(0,d)+" ("+seen[p]+")"+p.slice(d):p+" ("+seen[p]+")";seen[path(f)]++}
+      else seen[p]=1;
+      zip.file(p,f);
+    });
+    var lvl=+$("level").value,pr=$("prog");
+    pr.style.display="block";pr.value=0;$("make").disabled=true;say("msg1","Zip ban raha hai...");
+    zip.generateAsync({type:"blob",compression:lvl?"DEFLATE":"STORE",compressionOptions:{level:lvl||1}},function(m){pr.value=m.percent})
+      .then(function(blob){
+        var name=($("zname").value.trim()||"data").replace(/[\\/:*?"<>|]/g,"_")+".zip";
+        save(blob,name);say("msg1",name+" ("+size(blob.size)+") ban gaya.","ok");
+      })
+      .catch(function(e){say("msg1","Zip nahi ban saka: "+e.message,"err")})
+      .then(function(){pr.style.display="none";$("make").disabled=!files.length});
+  };
+
+  /* ---------- Zip kholo ---------- */
+  function openZip(list){
+    var f=list[0];if(!f)return;
+    if(needLib("msg2"))return;
+    say("msg2","Zip khul raha hai...");
+    JSZip.loadAsync(f).then(function(zip){
+      entries=Object.keys(zip.files).map(function(k){return zip.files[k]}).filter(function(e){return !e.dir});
+      var ul=$("list2");ul.innerHTML="";
+      entries.forEach(function(en){
+        var li=document.createElement("li"),n=document.createElement("span"),b=document.createElement("button");
+        n.className="n";n.textContent=en.name;b.textContent="Download";
+        b.onclick=function(){grab(en)};
+        li.appendChild(n);li.appendChild(b);ul.appendChild(li);
+      });
+      $("all").disabled=!entries.length;
+      say("msg2",entries.length?entries.length+" file mili.":"Is zip me koi file nahi hai.",entries.length?"ok":"err");
+    }).catch(function(){
+      entries=[];$("list2").innerHTML="";$("all").disabled=true;
+      say("msg2","Ye zip file padhi nahi ja saki. File kharab ho sakti hai ya password wali hai (password wali zip abhi support nahi).","err");
+    });
+  }
+  function grab(en){return en.async("blob").then(function(b){save(b,en.name.split("/").pop())})}
+  $("pickZip").onchange=function(e){openZip(Array.prototype.slice.call(e.target.files));e.target.value=""};
+  wire($("drop2"),openZip);
+  $("all").onclick=function(){
+    var i=0;say("msg2","Download ho rahi hain... (browser multiple downloads ki permission maange to Allow karo)");
+    (function next(){
+      if(i>=entries.length){say("msg2","Sab "+entries.length+" files download ho gayi.","ok");return}
+      grab(entries[i++]).then(function(){setTimeout(next,350)});
+    })();
+  };
+})();
+</script>
+<a href="index.html" aria-label="Home" style="position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:9999;padding:9px 14px;border-radius:999px;background:#111;color:#fff;font:600 14px system-ui,sans-serif;text-decoration:none;opacity:.88;box-shadow:0 4px 14px rgba(0,0,0,.3)">&#8592; Home</a>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+</body>
+</html>

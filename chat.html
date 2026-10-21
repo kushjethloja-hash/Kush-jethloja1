@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pair Chat</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+:root{--bg:#050a06;--card:#0a120b;--ink:#b6ffc4;--mute:#5fa56d;--main:#39ff7a;--main2:#22c55e;--meInk:#02140a;--them:#0f1f12;--line:#1c3a22}
+@media (prefers-color-scheme:dark){:root{--bg:#050a06;--card:#0a120b;--ink:#b6ffc4;--mute:#5fa56d;--main:#39ff7a;--main2:#22c55e;--meInk:#02140a;--them:#0f1f12;--line:#1c3a22}}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+.screen{display:none;flex:1;min-height:0;flex-direction:column}
+.screen.on{display:flex}
+.center{justify-content:center;align-items:center;gap:14px;padding:24px;text-align:center}
+h1{font-size:26px;letter-spacing:-.5px}
+p.s{color:var(--mute);max-width:320px}
+button{font:inherit;border:0;border-radius:12px;padding:14px 22px;background:var(--main);color:var(--meInk);font-weight:600;cursor:pointer}
+button.alt{background:transparent;color:var(--main);border:1.5px solid var(--main)}
+.center button{width:100%;max-width:320px}
+button:focus-visible,input:focus-visible{outline:3px solid var(--main);outline-offset:2px}
+.code{font:700 34px/1 ui-monospace,Menlo,monospace;letter-spacing:6px;background:var(--card);border:1px dashed var(--main);border-radius:12px;padding:16px 20px;user-select:all}
+input{font:inherit;width:100%;max-width:320px;padding:14px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);text-align:center}
+#codeIn{text-transform:uppercase;letter-spacing:4px}
+.status{font-size:14px;color:var(--mute);min-height:20px}
+/* Home */
+.head{padding:18px 16px 10px}
+.head p{color:var(--mute);font-size:14px}
+#list{flex:1;overflow-y:auto;padding:4px 12px}
+.row{display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:8px;cursor:pointer}
+.av{width:44px;height:44px;border-radius:50%;background:var(--main);color:var(--meInk);display:grid;place-items:center;font-weight:700;font-size:18px;flex:none}
+.info{flex:1;min-width:0}
+.info b{display:block}
+.info span{display:block;color:var(--mute);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .x{background:none;color:var(--mute);padding:8px;font-size:16px}
+.empty{text-align:center;color:var(--mute);padding:40px 20px}
+.bar{display:flex;gap:10px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0));border-top:1px solid var(--line);background:var(--card)}
+.bar button{flex:1}
+/* Chat */
+.top{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border-bottom:1px solid var(--line)}
+.top .back{background:none;color:var(--main);padding:6px 10px;font-size:20px}
+.dot{width:10px;height:10px;border-radius:50%;background:#22c55e;flex:none}
+.dot.off{background:#ef4444}
+.top small{display:block;color:var(--mute);font-size:12px}
+#log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.m{max-width:78%;padding:9px 13px;border-radius:16px;word-wrap:break-word;white-space:pre-wrap}
+.m.me{align-self:flex-end;background:var(--main);color:var(--meInk);border-bottom-right-radius:4px}
+.m.them{align-self:flex-start;background:var(--them);border-bottom-left-radius:4px}
+.m small{display:block;font-size:11px;opacity:.65;margin-top:2px}
+form{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0));background:var(--card);border-top:1px solid var(--line)}
+form input{max-width:none;text-align:left;flex:1;padding:12px 14px;border-radius:2px}
+form button{padding:12px 20px;border-radius:2px}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:20px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
+#toast.on{opacity:1}
+
+body{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;background-color:var(--bg);background-image:repeating-linear-gradient(0deg,rgba(57,255,122,.045) 0 1px,transparent 1px 3px);background-attachment:fixed}
+h1{font-weight:700;font-size:26px;letter-spacing:0;color:var(--main);text-shadow:0 0 10px color-mix(in srgb,var(--main) 60%,transparent)}
+h1::before{content:"> "}
+h1::after{content:"█";margin-left:4px;animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:0}}
+button{border-radius:2px;background:var(--main);color:var(--meInk)}
+button.alt{background:transparent;color:var(--main);border:1.5px solid var(--main)}
+.av{border-radius:2px;background:transparent;color:var(--main);border:1.5px solid var(--main)}
+.row{border-radius:2px}
+.code{border-radius:2px;color:var(--main);font-weight:700;font-size:34px;letter-spacing:6px;text-shadow:0 0 10px color-mix(in srgb,var(--main) 60%,transparent)}
+input{border-radius:2px}
+.m{border-radius:2px}
+.m.me{background:transparent;color:var(--main);border:1px solid var(--main)}
+.m.them{border:1px solid var(--line)}
+#toast{border-radius:2px;background:var(--main);color:var(--meInk)}
+.empty{font-style:normal}
+button.sm{padding:6px 14px;font-size:13px;margin-top:8px}
+.top .tools{margin-left:auto;display:flex}
+.top .tools .back{padding:6px 8px}
+#call{position:fixed;inset:0;z-index:50;background:#080d12;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center}
+#call.on{display:flex}
+#rv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#080d12}
+#lv{position:absolute;right:14px;top:calc(14px + env(safe-area-inset-top,0px));width:96px;height:136px;object-fit:cover;border-radius:16px;border:2px solid rgba(255,255,255,.4);background:#000;z-index:2;display:none}
+#lv.mir{transform:scaleX(-1)}
+.cinfo{position:relative;z-index:1;text-align:center;padding:0 20px}
+.cinfo .av{width:96px;height:96px;font-size:40px;margin:0 auto 14px}
+.cinfo h2{font-size:24px;font-weight:600}
+.cinfo p{opacity:.75;margin-top:4px}
+#call.vid .cinfo{position:absolute;top:calc(18px + env(safe-area-inset-top,0px));left:16px;text-align:left;padding:0;text-shadow:0 1px 6px rgba(0,0,0,.7)}
+#call.vid .cinfo .av{display:none}
+#call.vid .cinfo h2{font-size:18px}
+.ctrls{position:absolute;bottom:calc(28px + env(safe-area-inset-bottom,0px));left:0;right:0;display:none;justify-content:center;gap:18px;z-index:2}
+.ctrls button{width:60px;height:60px;padding:0;border-radius:50%;font-size:24px;background:rgba(255,255,255,.2);color:#fff}
+.ctrls button.end{background:#e11d48}
+.ctrls button.ok{background:#16a34a}
+.ctrls button.off{background:#fff;color:#080d12}
+
+.av{position:relative}
+.row.online .av::after{content:"";position:absolute;right:-3px;bottom:-3px;width:10px;height:10px;border-radius:50%;background:var(--main);border:2px solid var(--card);box-shadow:0 0 8px var(--main)}
+.info b .onl{color:var(--main);font-weight:400;font-size:12px;margin-left:8px}
+.m{-webkit-touch-callout:none}
+#toast{z-index:200}
+#cover{position:fixed;inset:0;z-index:100;background:#fff;color:#222;display:none;flex-direction:column;font-family:Calibri,"Segoe UI",system-ui,sans-serif}
+#cover.on{display:flex}
+#cover .cv-bar{display:flex;justify-content:space-between;padding:10px 16px;background:#f3f3f3;border-bottom:1px solid #ddd;font-size:14px;color:#444}
+#cover .cv-body{padding:22px 20px;max-width:720px;overflow:hidden}
+#cover h2{font-size:22px;font-weight:600;margin-bottom:12px;color:#222}
+#cover p,#cover li{font-size:15px;line-height:1.6;margin-bottom:6px}
+#cover ul{padding-left:20px;margin-bottom:12px}
+.top .tools .back{padding:6px 6px;font-size:16px}
+form button.att{padding:12px 14px;font-size:16px}
+.m img{display:block;max-width:100%;max-height:260px;margin:0 auto 4px;border-radius:2px;cursor:zoom-in}
+#lb{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;padding:12px}
+#lb.on{display:flex}
+#lb img{max-width:100%;max-height:100%;object-fit:contain}
+</style>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kush">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head>
+<body>
+
+<!-- First time: name -->
+<div id="setup" class="screen center">
+  <h1>Pair Chat</h1>
+  <p class="s">Enter your name and email. This name will show on paired phones, and if you are offline you will find out by email (your email is shared only with paired phones)</p>
+  <input id="nameIn" maxlength="20" placeholder="Your name" autocomplete="off">
+  <input id="emailIn" type="email" inputmode="email" maxlength="100" placeholder="Your email" autocomplete="email">
+  <button id="btnSave">Get started</button>
+</div>
+
+<!-- Edit info -->
+<div id="rename" class="screen center">
+  <h1>My info</h1>
+  <p class="s">Once saved, the new name will show on paired phones too</p>
+  <input id="renameIn" maxlength="20" placeholder="Your name" autocomplete="off">
+  <input id="renameEmail" type="email" inputmode="email" maxlength="100" placeholder="Your email" autocomplete="email">
+  <button id="btnRenameSave">Save</button>
+  <button id="btnRenameBack" class="alt">Back</button>
+</div>
+
+<!-- Home: already paired phones -->
+<div id="home" class="screen">
+  <div class="head"><h1>Pair Chat</h1><p id="meLine"></p><p id="net"></p><a href="index.html" style="display:inline-block;margin:0 8px 8px 0;padding:8px 12px;border:1.5px solid var(--main);border-radius:2px;color:var(--main);text-decoration:none;font-size:14px">&#8592; Home</a><button id="btnRename" class="alt sm">✎ Edit name / email</button></div>
+  <div id="list"></div>
+  <div class="bar">
+    <button id="btnConnect">Connect This</button>
+    <button id="btnJoin" class="alt">Enter code</button>
+  </div>
+</div>
+
+<!-- My code -->
+<div id="host" class="screen center">
+  <p class="s">Open this HTML on the other phone, tap "Enter code" and type this code. Once paired, you will not need the code again.</p>
+  <div class="code" id="myCode">······</div>
+  <button id="btnShare" class="alt">Share link</button>
+  <button id="btnHostBack" class="alt">Back</button>
+  <p class="status" id="hostStatus"></p>
+</div>
+
+<!-- Enter code -->
+<div id="guest" class="screen center">
+  <p class="s">Enter the 6-character code from the phone where you tapped Connect This.</p>
+  <input id="codeIn" maxlength="6" placeholder="ABC123" autocomplete="off">
+  <button id="btnPair">Pair</button>
+  <button id="btnGuestBack" class="alt">Back</button>
+  <p class="status" id="guestStatus"></p>
+</div>
+
+<!-- Chat -->
+<div id="chat" class="screen">
+  <div class="top">
+    <button class="back" id="btnBack" aria-label="Back">‹</button>
+    <span class="dot off" id="dot"></span>
+    <div><strong id="who"></strong><small id="st"></small></div>
+    <div class="tools">
+      <button class="back" id="btnClear" aria-label="Delete chat" title="Delete chat">🗑</button>
+      <button class="back" id="btnVoice" aria-label="Voice call" title="Voice call">📞</button>
+      <button class="back" id="btnVideo" aria-label="Video call" title="Video call">📹</button>
+      <button class="back" id="btnNotify" aria-label="Notify by email" title="Notify by email that you are online">✉</button>
+    </div>
+  </div>
+  <div id="log"></div>
+  <form id="f">
+    <button type="button" class="alt att" id="btnImg" aria-label="Send image" title="Send image">📷</button>
+    <input id="msg" placeholder="Type a message…" autocomplete="off">
+    <button>Send</button>
+  </form>
+  <input type="file" id="imgIn" accept="image/*" hidden>
+</div>
+<div id="lb"><img alt=""></div>
+
+<!-- Call -->
+<div id="call">
+  <video id="rv" autoplay playsinline></video>
+  <video id="lv" autoplay playsinline muted></video>
+  <div class="cinfo"><div class="av" id="cav"></div><h2 id="cname"></h2><p id="cst"></p></div>
+  <div class="ctrls" id="ctrlIn">
+    <button class="end" id="cDecline" aria-label="Decline">📵</button>
+    <button class="ok" id="cAccept" aria-label="Answer">📞</button>
+  </div>
+  <div class="ctrls" id="ctrlOn">
+    <button id="cMute" aria-label="Mic">🎤</button>
+    <button id="cCam" aria-label="Camera">📹</button>
+    <button id="cFlip" aria-label="Flip camera">🔄</button>
+    <button class="end" id="cEnd" aria-label="End call">📵</button>
+  </div>
+</div>
+
+<div id="cover" aria-hidden="true">
+  <div class="cv-bar"><span>Q3 planning notes.docx</span><span>Saved</span></div>
+  <div class="cv-body">
+    <h2>Q3 planning notes</h2>
+    <p>Meeting recap and open items for the next review cycle.</p>
+    <ul>
+      <li>Finalize vendor comparison and share with the team</li>
+      <li>Update the project timeline after budget sign-off</li>
+      <li>Collect feedback on the draft process document</li>
+      <li>Schedule the follow-up review for next week</li>
+    </ul>
+    <p>Owner: Operations &middot; Status: In progress</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const PREFIX = 'paired-chat-';
+const store = {
+  get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+let me = store.get('me', null);          // {id, name}
+let devices = store.get('devices', {});  // id -> {name, last, time}
+let hist = store.get('hist', {});        // id -> [{text, w, time}]
+let peer, conn = null, cur = null;
+
+const show = id => { document.querySelectorAll('.screen').forEach(s => s.classList.remove('on')); $(id).classList.add('on'); };
+const save = () => { store.set('devices', devices); store.set('hist', hist); };
+const hm = t => new Date(t).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit', hour12:true});
+const BASE_TITLE = document.title;
+let tt;
+function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => e.classList.remove('on'), 4000); }
+const rand = () => Array.from({length:6}, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
+
+// ----- Email service (EmailJS) — create a free account at emailjs.com and fill in these 3 things here -----
+const EMAILJS = { service: '', template: '', key: '' };   // service_id, template_id, public key
+const isEmail = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
+// ----- First-time setup -----
+$('btnSave').onclick = () => {
+  const n = $('nameIn').value.trim();
+  const e = $('emailIn').value.trim();
+  if (!n) return toast('Enter your name');
+  if (!isEmail(e)) return toast('Enter a valid email');
+  me = { id: me ? me.id : rand(), name: n, email: e };
+  store.set('me', me);
+  start();
+};
+
+// ----- Rename -----
+$('btnRename').onclick = () => { $('renameIn').value = me.name; $('renameEmail').value = me.email || ''; show('rename'); setTimeout(() => $('renameIn').focus(), 50); };
+$('btnRenameBack').onclick = () => show('home');
+function saveRename() {
+  const n = $('renameIn').value.trim();
+  const e = $('renameEmail').value.trim();
+  if (!n) return toast('Enter your name');
+  if (!isEmail(e)) return toast('Enter a valid email');
+  me.name = n;
+  me.email = e;
+  store.set('me', me);
+  // Send the new name/email right away to the currently connected phone
+  if (conn && conn.open) conn.send({ t: 'name', name: n, email: e });
+  renderHome();
+  show('home');
+  toast('Saved ✓');
+}
+$('btnRenameSave').onclick = saveRename;
+[ 'renameIn', 'renameEmail' ].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') saveRename(); }));
+
+// ----- Email to offline phone: "I am online now" -----
+async function sendEmail(id, auto) {
+  const d = devices[id];
+  if (!d || !d.email) { if (!auto) toast('Their email was not found. Open the app on both phones once and connect.'); return false; }
+  const gap = auto ? 2 * 3600e3 : 5 * 60e3;   // avoid repeated emails
+  if (Date.now() - (d.notified || 0) < gap) { if (!auto) toast('An email was just sent. Try again in a while.'); return false; }
+  const link = /^https?:/.test(location.protocol) ? location.href.split('?')[0] : '';
+  const subject = me.name + ' is online on Pair Chat';
+  const message = me.name + ' is online now. Open Pair Chat to chat.' + (link ? '\n' + link : '');
+  if (!EMAILJS.service || !EMAILJS.template || !EMAILJS.key) {
+    if (!auto) location.href = 'mailto:' + encodeURIComponent(d.email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(message);
+    return false;
+  }
+  try {
+    const r = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id: EMAILJS.service, template_id: EMAILJS.template, user_id: EMAILJS.key,
+        template_params: { to_email: d.email, to_name: d.name, from_name: me.name, subject, message }
+      })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    d.notified = Date.now();
+    save();
+    toast('Email sent to ' + d.name + ' ✓');
+    return true;
+  } catch (e) {
+    if (!auto) toast('Email could not be sent. Check your EmailJS settings.');
+    return false;
+  }
+}
+$('btnNotify').onclick = () => { if (cur) sendEmail(cur, false); };
+
+// Check online or not — silently (without opening chat). cb(true) = online, cb(false) = offline, cb(null) = unsure
+const probes = {};
+function probe(id, cb) {
+  if (!peer || peer.destroyed) return;
+  let done = false;
+  const c = peer.connect(PREFIX + id);
+  const fin = ok => { if (done) return; done = true; delete probes[id]; try { c.close(); } catch {} cb(ok); };
+  probes[id] = fin;
+  c.on('open', () => { try { c.send({ t: 'ping', id: me.id }); } catch {} setTimeout(() => fin(true), 300); });
+  c.on('error', () => fin(null));
+  setTimeout(() => fin(null), 8000);
+}
+function notifyOffline() {
+  Object.keys(devices).forEach((id, i) => {
+    if (conn && conn.open && conn.peer === PREFIX + id) return;
+    setTimeout(() => probe(id, ok => {
+      if (ok === true) setPresence(id, true);
+      else if (ok === false) { setPresence(id, false); if (devices[id] && devices[id].email) sendEmail(id, true); }
+    }), i * 500);
+  });
+}
+
+// ----- Online presence: show when the other person comes online -----
+const online = {};
+let pollT = null;
+function setPresence(id, on) {
+  if (!devices[id]) return;
+  const was = !!online[id];
+  online[id] = on;
+  if (on === was) return;
+  if ($('home').classList.contains('on')) renderHome();
+  if (cur === id) setStatus(on);
+  if (on) {
+    announce(id);
+    // lower code connects first, so both phones never connect to each other at once
+    if (cur === id && $('chat').classList.contains('on') && !live() && me.id < id) connectTo(id);
+  }
+}
+function announce(id) {
+  const n = devices[id].name;
+  if (cur === id && $('chat').classList.contains('on') && !document.hidden) return;
+  toast('🟢 ' + n + ' is online');
+  try { navigator.vibrate && navigator.vibrate(120); } catch {}
+  if (document.hidden) {
+    document.title = '● ' + n + ' is online';
+    try { if (window.Notification && Notification.permission === 'granted') new Notification(n + ' is online'); } catch {}
+  }
+}
+function checkPresence(id) {
+  if (!peer || peer.destroyed || !peer.open || !devices[id]) return;
+  if (conn && conn.open && conn.peer === PREFIX + id) { setPresence(id, true); return; }
+  if (probes[id]) return;
+  probe(id, ok => { if (ok === true) setPresence(id, true); else if (ok === false) setPresence(id, false); });
+}
+function pollPresence() { Object.keys(devices).forEach((id, i) => setTimeout(() => checkPresence(id), i * 400)); }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { document.title = BASE_TITLE; pollPresence(); } });
+document.addEventListener('click', () => { try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch {} }, { once: true });
+
+// ----- Paired phones list -----
+function renderHome() {
+  $('meLine').textContent = me.name + (me.email ? ' · ' + me.email : '') + ' · Your code ' + me.id;
+  const ids = Object.keys(devices).sort((a, b) => (devices[b].time || 0) - (devices[a].time || 0));
+  const l = $('list');
+  l.innerHTML = '';
+  if (!ids.length) { l.innerHTML = '<div class="empty">No phone is paired yet.<br>Tap Connect This or Enter code below.</div>'; return; }
+  ids.forEach(id => {
+    const d = devices[id];
+    const r = document.createElement('div');
+    r.className = 'row' + (online[id] ? ' online' : '');
+    r.innerHTML = '<div class="av"></div><div class="info"><b></b><span></span></div><button class="x" aria-label="Remove">✕</button>';
+    r.querySelector('.av').textContent = d.name.charAt(0).toUpperCase();
+    r.querySelector('b').textContent = d.name;
+    if (online[id]) { const o = document.createElement('span'); o.className = 'onl'; o.textContent = '● Online'; r.querySelector('b').appendChild(o); }
+    r.querySelector('span').textContent = d.last || 'Tap to connect';
+    r.onclick = () => openChat(id);
+    r.querySelector('.x').onclick = e => {
+      e.stopPropagation();
+      if (confirm('Remove ' + d.name + '?')) { delete devices[id]; delete hist[id]; delete online[id]; save(); renderHome(); }
+    };
+    l.appendChild(r);
+  });
+}
+
+// ----- Chat -----
+function setStatus(on, text) {
+  $('dot').classList.toggle('off', !on);
+  $('st').textContent = text || (on ? 'Online' : 'Offline');
+  $('btnNotify').style.display = on ? 'none' : '';
+}
+const live = () => conn && conn.open && cur && conn.peer === PREFIX + cur;
+
+let asking = false;
+function askDelete(m, el) {
+  if (asking) return;
+  asking = true;
+  if (confirm('Delete this message? It is removed only from this phone.')) {
+    const id = cur, a = hist[id] || [], i = a.indexOf(m);
+    if (i > -1) a.splice(i, 1);
+    if (devices[id]) { const l = a[a.length - 1]; devices[id].last = l ? (l.w === 'me' ? 'You: ' : '') + l.text : ''; }
+    save();
+    el.remove();
+  }
+  asking = false;
+}
+function attachDelete(el, m) {
+  let pt = null;
+  const stop = () => { clearTimeout(pt); pt = null; };
+  el.addEventListener('pointerdown', () => { stop(); pt = setTimeout(() => { pt = null; askDelete(m, el); }, 600); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => el.addEventListener(ev, stop));
+  el.addEventListener('contextmenu', e => { e.preventDefault(); stop(); askDelete(m, el); });
+}
+
+function bubble(m) {
+  const d = document.createElement('div');
+  d.className = 'm ' + m.w;
+  d.textContent = m.img ? '' : m.text;
+  if (m.img) {
+    const im = document.createElement('img');
+    im.src = m.img; im.alt = 'Image';
+    im.onclick = () => { $('lb').querySelector('img').src = m.img; $('lb').classList.add('on'); };
+    d.appendChild(im);
+  }
+  const t = document.createElement('small');
+  t.textContent = hm(m.time);
+  d.appendChild(t);
+  attachDelete(d, m);
+  $('log').appendChild(d);
+  $('log').scrollTop = $('log').scrollHeight;
+}
+
+function addMsg(id, text, w, img) {
+  const m = { text, w, time: Date.now() };
+  if (img) m.img = img;
+  (hist[id] = hist[id] || []).push(m);
+  if (hist[id].length > 200) hist[id].shift();
+  if (img) {   // keep only the latest 12 images per chat so phone storage does not fill up
+    const imgs = hist[id].filter(x => x.img);
+    while (imgs.length > 12) { const o = imgs.shift(); delete o.img; o.text = '🖼 Image removed'; }
+  }
+  devices[id].last = (w === 'me' ? 'You: ' : '') + text;
+  devices[id].time = m.time;
+  save();
+  if (cur === id && $('chat').classList.contains('on')) bubble(m); else renderHome();
+}
+
+// Tap a saved phone → chat opens and connects automatically
+function openChat(id) {
+  cur = id;
+  $('who').textContent = devices[id].name;
+  $('log').innerHTML = '';
+  (hist[id] || []).forEach(bubble);
+  show('chat');
+  if (live()) return setStatus(true);
+  setStatus(false, 'Connecting…');
+  connectTo(id);
+}
+
+function connectTo(id) {
+  if (!peer || peer.destroyed) return toast('Connection is not ready');
+  const c = peer.connect(PREFIX + id, { reliable: true });
+  wire(c);
+}
+
+// Connection handling for both sides
+function wire(c) {
+  c.on('open', () => c.send({ t: 'hi', id: me.id, name: me.name, email: me.email }));
+  c.on('data', d => {
+    if (!d) return;
+    if (d.t === 'hi') {
+      // If a new phone connects, ask; if already paired, connect directly
+      if (c.incoming && !devices[d.id] && !confirm(d.name + ' wants to pair with you. Pair?')) { c.close(); return; }
+      const first = !devices[d.id];
+      const dev = devices[d.id] = devices[d.id] || {};
+      dev.name = d.name;
+      if (isEmail(String(d.email || ''))) dev.email = String(d.email).slice(0, 100);
+      save();
+      if (conn && conn !== c && conn.open) conn.close();
+      conn = c;
+      c.remoteId = d.id;
+      if (first) online[d.id] = true; else setPresence(d.id, true);
+      if (first) toast('Paired with ' + d.name + ' ✓');
+      if (cur === d.id || first && !$('chat').classList.contains('on') && !c.incoming) { openChat(d.id); }
+      else if (c.incoming && first) { openChat(d.id); }
+      if (cur === d.id) { $('who').textContent = devices[d.id].name; setStatus(true); }
+      if ($('home').classList.contains('on')) renderHome();
+    } else if (d.t === 'name' && c.remoteId && devices[c.remoteId]) {
+      const n = String(d.name || '').trim().slice(0, 20);
+      if (!n) return;
+      devices[c.remoteId].name = n;
+      if (isEmail(String(d.email || ''))) devices[c.remoteId].email = String(d.email).slice(0, 100);
+      save();
+      if (cur === c.remoteId) $('who').textContent = n;
+      if ($('home').classList.contains('on')) renderHome();
+      toast('They will now show as ' + n);
+    } else if (d.t === 'ping') {
+      const pid = String(d.id || '');
+      if (devices[pid]) setPresence(pid, true);
+    } else if (d.t === 'callend') {
+      if (callState && callPeer === d.id) endCall(false);
+    } else if (d.t === 'msg' && c.remoteId) {
+      addMsg(c.remoteId, String(d.text), 'them');
+    } else if (d.t === 'img' && c.remoteId && devices[c.remoteId]) {
+      const s = String(d.data || '');
+      if (/^data:image\/(jpeg|png|webp|gif);base64,/.test(s) && s.length < 3e6) addMsg(c.remoteId, '📷 Photo', 'them', s);
+    }
+  });
+  c.on('close', () => {
+    if (conn === c) { conn = null; if (cur === c.remoteId) setStatus(false); if (c.remoteId) { const rid = c.remoteId; setTimeout(() => checkPresence(rid), 1500); } }
+  });
+}
+
+$('f').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = $('msg').value.trim();
+  if (!v) return;
+  if (!live()) { toast('Connecting… tap Send again'); connectTo(cur); return; }
+  conn.send({ t: 'msg', text: v });
+  addMsg(cur, v, 'me');
+  $('msg').value = '';
+});
+// ----- Send image -----
+function shrink(file, max, q) {
+  return new Promise((res, rej) => {
+    const u = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      const k = Math.min(1, max / Math.max(im.width, im.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(im.width * k)); cv.height = Math.max(1, Math.round(im.height * k));
+      const x = cv.getContext('2d');
+      x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height);
+      x.drawImage(im, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(u);
+      res(cv.toDataURL('image/jpeg', q));
+    };
+    im.onerror = () => { URL.revokeObjectURL(u); rej(new Error('bad image')); };
+    im.src = u;
+  });
+}
+$('btnImg').onclick = () => { if (!cur) return; if (!live()) { toast('Connecting… try again in a moment'); connectTo(cur); return; } $('imgIn').click(); };
+$('imgIn').onchange = async () => {
+  const f = $('imgIn').files[0];
+  $('imgIn').value = '';
+  if (!f || !cur) return;
+  if (!live()) { toast('Connecting… try again in a moment'); connectTo(cur); return; }
+  try {
+    const data = await shrink(f, 800, 0.65);
+    if (!live()) return toast('Connection lost. Try again.');
+    conn.send({ t: 'img', data });
+    addMsg(cur, '📷 Photo', 'me', data);
+  } catch { toast('Could not send this image'); }
+};
+$('lb').onclick = () => { $('lb').classList.remove('on'); $('lb').querySelector('img').removeAttribute('src'); };
+
+$('btnClear').onclick = () => {
+  if (!cur || !confirm('Delete this entire chat? It is removed only from this phone.')) return;
+  hist[cur] = [];
+  if (devices[cur]) devices[cur].last = '';
+  save();
+  $('log').innerHTML = '';
+  toast('Chat deleted');
+};
+
+// Quick hide: Esc key or the 🗔 button shows a plain document. Tap it 3 times (or press Esc) to come back.
+const cover = $('cover');
+let coverTaps = [];
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cover.classList.toggle('on'); });
+cover.addEventListener('click', () => {
+  const n = Date.now();
+  coverTaps = coverTaps.filter(t => n - t < 1200); coverTaps.push(n);
+  if (coverTaps.length >= 3) { coverTaps = []; cover.classList.remove('on'); }
+});
+$('btnBack').onclick = () => { cur = null; renderHome(); show('home'); };
+
+// ----- Connect This / Enter code -----
+$('btnConnect').onclick = () => { $('myCode').textContent = me.id; $('hostStatus').textContent = 'Waiting for the other phone…'; show('host'); };
+$('btnHostBack').onclick = () => show('home');
+$('btnShare').onclick = async () => {
+  const url = location.href.split('?')[0] + '?join=' + me.id;
+  try { await navigator.share({ title: 'Pair Chat', url }); }
+  catch { try { await navigator.clipboard.writeText(url); toast('Link copied'); } catch {} }
+};
+$('btnJoin').onclick = () => { $('guestStatus').textContent = ''; show('guest'); };
+$('btnGuestBack').onclick = () => show('home');
+$('btnPair').onclick = () => {
+  const code = $('codeIn').value.trim().toUpperCase();
+  if (code.length !== 6) return ($('guestStatus').textContent = 'Enter the 6-character code');
+  if (code === me.id) return ($('guestStatus').textContent = 'This is your own code');
+  $('guestStatus').textContent = 'Pairing…';
+  connectTo(code);
+};
+
+// ----- Voice / Video call -----
+let call = null, localStream = null, callState = '', callPeer = null, callVideo = false, callDir = '', callStart = 0, ringT = null, tickT = null, facing = 'user';
+const fmt = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+
+// Send a short message to any paired phone (even when chat is not open)
+function sendTo(id, obj) {
+  if (conn && conn.open && conn.peer === PREFIX + id) { conn.send(obj); return; }
+  if (!peer || peer.destroyed) return;
+  const had = probes[id];
+  if (!had) probes[id] = () => { delete probes[id]; };
+  const c = peer.connect(PREFIX + id);
+  const clean = () => { if (!had) delete probes[id]; };
+  c.on('open', () => { c.send(obj); setTimeout(() => { try { c.close(); } catch {} clean(); }, 800); });
+  c.on('error', clean);
+  setTimeout(clean, 8000);
+}
+
+async function getMedia(video) {
+  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)
+    throw new Error('Calls do not work when opened directly from a file. Open it on an https website link.');
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true },
+      video: video ? { facingMode: facing } : false
+    });
+  } catch (e) {
+    const n = (e && e.name) || '';
+    if (n === 'NotAllowedError' || n === 'SecurityError')
+      throw new Error(location.protocol === 'https:' ? 'Allow mic and camera permission in browser/phone settings' : 'This page is not on https, so permission was not granted');
+    if (n === 'NotFoundError') throw new Error('Mic/camera not found');
+    if (n === 'NotReadableError') throw new Error('Mic/camera is being used by another app');
+    throw new Error('Could not start mic/camera (' + n + ')');
+  }
+}
+
+function showCall(name, st, incoming) {
+  $('cav').textContent = name.charAt(0).toUpperCase();
+  $('cname').textContent = name;
+  $('cst').textContent = st;
+  $('ctrlIn').style.display = incoming ? 'flex' : 'none';
+  $('ctrlOn').style.display = incoming ? 'none' : 'flex';
+  $('call').classList.add('on');
+}
+
+function setLocal() {
+  $('lv').srcObject = localStream;
+  $('lv').style.display = callVideo ? 'block' : 'none';
+  $('lv').classList.toggle('mir', facing === 'user');
+  $('cCam').style.display = $('cFlip').style.display = callVideo ? '' : 'none';
+  $('cMute').textContent = '🎤'; $('cMute').classList.remove('off');
+  $('cCam').textContent = '📹'; $('cCam').classList.remove('off');
+}
+
+function hookCall(c) {
+  c.on('stream', rs => {
+    if (call !== c) return;
+    $('rv').srcObject = rs;
+    $('rv').play().catch(() => {});
+    if (callState !== 'on') {
+      callState = 'on';
+      callStart = Date.now();
+      clearTimeout(ringT);
+      $('ctrlIn').style.display = 'none'; $('ctrlOn').style.display = 'flex';
+      tickT = setInterval(() => { $('cst').textContent = fmt(Math.round((Date.now() - callStart) / 1000)); }, 1000);
+      $('cst').textContent = '00:00';
+    }
+    $('call').classList.toggle('vid', callVideo && rs.getVideoTracks().length > 0);
+  });
+  c.on('close', () => { if (call === c) endCall(false); });
+  c.on('error', () => { if (call === c) endCall(false, 'Call problem'); });
+}
+
+async function startCall(video) {
+  if (!cur) return;
+  if (callState) return toast('A call is already in progress');
+  if (!peer || peer.destroyed || !peer.open) return toast('Connection is not ready. Please wait a moment.');
+  const id = cur;
+  facing = 'user';
+  try { localStream = await getMedia(video); } catch (e) { return toast(e.message); }
+  callPeer = id; callVideo = video; callDir = 'me'; callState = 'out';
+  call = peer.call(PREFIX + id, localStream, { metadata: { video, id: me.id, name: me.name } });
+  setLocal();
+  showCall(devices[id].name, 'Ringing…', false);
+  hookCall(call);
+  ringT = setTimeout(() => { if (callState === 'out') endCall(true, 'No answer'); }, 45000);
+}
+
+function onIncomingCall(c) {
+  const md = c.metadata || {};
+  const id = String(md.id || '');
+  if (!devices[id]) { try { c.close(); } catch {} return; }       // only calls from paired phones
+  if (callState) { try { c.close(); } catch {} sendTo(id, { t: 'callend', id: me.id }); return; }
+  call = c; callPeer = id; callVideo = !!md.video; callDir = 'them'; callState = 'in'; facing = 'user';
+  showCall(devices[id].name, callVideo ? 'Incoming video call…' : 'Incoming voice call…', true);
+  try { navigator.vibrate && navigator.vibrate([400, 200, 400, 200, 400]); } catch {}
+  ringT = setTimeout(() => { if (callState === 'in') endCall(true); }, 45000);
+}
+
+function endCall(notify, msg) {
+  if (!callState) return;
+  const id = callPeer, st = callState, dir = callDir, video = callVideo;
+  const dur = callStart ? Math.round((Date.now() - callStart) / 1000) : 0;
+  if (notify && id) sendTo(id, { t: 'callend', id: me.id });
+  clearTimeout(ringT); clearInterval(tickT);
+  const c = call;
+  call = null; callState = ''; callPeer = null; callStart = 0;
+  try { c && c.close(); } catch {}
+  if (localStream) localStream.getTracks().forEach(t => t.stop());
+  localStream = null;
+  $('rv').srcObject = null; $('lv').srcObject = null;
+  $('call').classList.remove('on', 'vid');
+  if (msg) toast(msg);
+  if (id && devices[id]) {
+    if (dur) addMsg(id, (video ? '📹 Video call · ' : '📞 Voice call · ') + fmt(dur), dir);
+    else if (st === 'in') addMsg(id, '📞 Missed call', 'them');
+  }
+}
+
+$('btnVoice').onclick = () => startCall(false);
+$('btnVideo').onclick = () => startCall(true);
+$('cEnd').onclick = () => endCall(true);
+$('cDecline').onclick = () => endCall(true);
+$('cAccept').onclick = async () => {
+  const c = call;
+  if (callState !== 'in' || !c) return;
+  try { localStream = await getMedia(callVideo); }
+  catch (e) { endCall(true, e.message); return; }
+  if (call !== c) { localStream.getTracks().forEach(t => t.stop()); localStream = null; return; }
+  clearTimeout(ringT);
+  callState = 'conn';
+  setLocal();
+  $('cst').textContent = 'Connecting…';
+  $('ctrlIn').style.display = 'none'; $('ctrlOn').style.display = 'flex';
+  hookCall(c);
+  c.answer(localStream);
+};
+$('cMute').onclick = () => {
+  if (!localStream) return;
+  const t = localStream.getAudioTracks()[0]; if (!t) return;
+  t.enabled = !t.enabled;
+  $('cMute').textContent = t.enabled ? '🎤' : '🔇';
+  $('cMute').classList.toggle('off', !t.enabled);
+};
+$('cCam').onclick = () => {
+  if (!localStream) return;
+  const t = localStream.getVideoTracks()[0]; if (!t) return;
+  t.enabled = !t.enabled;
+  $('cCam').textContent = t.enabled ? '📹' : '🚫';
+  $('cCam').classList.toggle('off', !t.enabled);
+};
+$('cFlip').onclick = async () => {
+  if (!call || !localStream || !call.peerConnection) return;
+  const next = facing === 'user' ? 'environment' : 'user';
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: next } });
+    const nt = s.getVideoTracks()[0];
+    const sender = call.peerConnection.getSenders().find(x => x.track && x.track.kind === 'video');
+    if (sender) await sender.replaceTrack(nt);
+    const old = localStream.getVideoTracks()[0];
+    if (old) { localStream.removeTrack(old); old.stop(); }
+    localStream.addTrack(nt);
+    facing = next;
+    $('lv').srcObject = localStream;
+    $('lv').classList.toggle('mir', facing === 'user');
+  } catch { toast('Could not flip camera'); }
+};
+
+// ----- Start Peer (permanent ID for each phone) -----
+function setNet(t) { const e = $('net'); if (e) e.textContent = t; }
+function start() {
+  // Show the screen immediately, do not wait for internet/server
+  renderHome();
+  show('home');
+  const j = (new URLSearchParams(location.search).get('join') || '').toUpperCase();
+  if (j && !devices[j] && j !== me.id) { $('codeIn').value = j; show('guest'); }
+
+  if (typeof Peer === 'undefined') { setNet('PeerJS did not load. Check your internet and refresh the page.'); return; }
+  setNet('Connecting…');
+  try { peer = new Peer(PREFIX + me.id); } catch (e) { setNet('Error: ' + e.message); return; }
+  peer.on('open', () => { setNet('Online ✓'); notifyOffline(); if (!pollT) pollT = setInterval(pollPresence, 20000); });
+  peer.on('connection', c => { c.incoming = true; wire(c); });
+  peer.on('call', onIncomingCall);
+  peer.on('disconnected', () => { setNet('Reconnecting…'); try { peer.reconnect(); } catch {} });
+  peer.on('error', e => {
+    if (e.type === 'peer-unavailable') {
+      // Silent-check phone found offline → let the email go out, do not show toast
+      const m = /paired-chat-([A-Z0-9]{6})/.exec(e.message || '');
+      if (m && probes[m[1]]) { probes[m[1]](false); return; }
+      if (callState === 'out') { endCall(false, 'That phone is not online right now'); return; }
+      const msg = 'That phone is not online right now. Open the app on it.';
+      toast(msg);
+      $('guestStatus').textContent = msg;
+      if (cur) { setStatus(false); setPresence(cur, false); }
+    } else if (e.type === 'unavailable-id') {
+      setNet('This app is open in another tab/window');
+    } else if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(e.type)) {
+      setNet('Cannot connect to the server. Check your internet.');
+    } else toast('Error: ' + e.type);
+  });
+}
+
+if (me && me.email) start();
+else { if (me) $('nameIn').value = me.name; show('setup'); }   // ask old users for their email
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+</body>
+</html>

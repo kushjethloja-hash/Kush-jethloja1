@@ -1,0 +1,25 @@
+{
+  "name": "Kush Jethloja",
+  "short_name": "Kush",
+  "description": "Kush Jethloja portfolio with Pair Chat, Data Bank and Zip Tool",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F6F3F8",
+  "theme_color": "#F6F3F8",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
